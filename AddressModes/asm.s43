@@ -1,0 +1,48 @@
+#include "msp430.h"                     ; #define controlled include file
+
+        NAME    main                    ; module name
+
+        PUBLIC  main                    ; make the main label vissible
+                                        ; outside this module
+        
+        ORG     0x01c00
+x       dw      5
+y       dw      7
+list    dw      9,11,13,17,25,32
+
+        ORG     0FFFEh
+        DC16    init                    ; set reset vector to 'init' label
+
+        RSEG    CSTACK                  ; pre-declaration of segment
+        RSEG    CODE                    ; place program in 'CODE' segment
+
+init:   MOV     #SFE(CSTACK), SP        ; set up stack
+
+main:   NOP                             ; main program
+        MOV.W   #WDTPW+WDTHOLD,&WDTCTL  ; Stop watchdog timer
+
+UnlockGPIO:
+
+        BIC.W   #LOCKLPM5, &PM5CTL0    ;Disable the GPIO power-on default
+                                        ;high-impedance mode to activate
+                                        ;previously configured port settings
+
+AddressMode:
+        MOV      #2, R5                 ; Immediate (source only) (signo de numero indica que es una constante, 
+                                        ; guardando un 2 en el registro 5)
+        MOV      R5, R6                 ; Register (source and destination)
+        MOV      list, R7               ;Symbolic/PC-relative (source and destination)
+        MOV      &list, R8              ; Absolute
+        MOV      list(R5), R9           ;Absolute
+        MOV      R5, list(R5)           
+        MOV      #0x1C08, R10
+        MOV      @R10, R11              ;Indirect (source)
+        MOV      @R10+, R12             ;Indirect and auto increment (source)
+        MOV      @R10 , R13             
+        MOV      list(R5), list         ;Memory to memory move
+
+        JMP $                           ;Endless loop
+        
+        nop
+        END
+
