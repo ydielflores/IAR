@@ -1,0 +1,61 @@
+#include "msp430.h"                     ; #define controlled include file
+
+        NAME    main                    ; module name
+
+        PUBLIC  main                    ; make the main label vissible
+                                        ; outside this module
+        ORG     0FFFEh
+        DC16    init                    ; set reset vector to 'init' label
+
+        RSEG    CSTACK                  ; pre-declaration of segment
+        RSEG    CODE                    ; place program in 'CODE' segment
+
+init:   MOV     #SFE(CSTACK), SP        ; set up stack
+
+main:   NOP                             ; main program
+        MOV.W   #WDTPW+WDTHOLD,&WDTCTL  ; Stop watchdog timer
+
+UnlockGPIO:
+        BIC.W   #LOCKLPM5, &PM5CTL0    ;Disable the GPIO power-on default
+                                        ;high-impedance mode to activate
+                                        ;previously configured port settings
+SetupPorts:
+        bic.b   #0xFF,&P1SEL0           ; Set PxSel0 and PxSel1 to digital I/O
+        bic.b   #0xFF,&P1SEL1           ; Digital I/O is the default
+        bic.b   #0xFF,&P9SEL0
+        bic.b   #0xFF,&P9SEL1
+        
+        bis.b   #0xFF,&P1DIR            ;Set all P1 pins for output
+        bis.b   #0xFF,&P9DIR            ;Set all P9 pins for output
+
+        bic.b   #0xFF,P1REN             ;No need to enable because all pins
+        bic.b   #0xFF,P9REN             ;set to output
+
+        bic.b   #0x01,&P1OUT            ;Clear P1.0 and P9.7 output latch to
+        bic.b   #0x80,&P9OUT            ;start with both off
+
+        ;Next two instructions are redundant. Included to 
+        ;show how to set individual pins
+        bis.b   #BIT0, &P1DIR           ;#BIT0 = 0x01
+        bis.b   #BIT7, &P9DIR           ;#BIT7 = 0x80
+
+MainLoop:
+        xor.b   #BIT0, &P1OUT           ;Toggle P1.0 red LED
+        xor.b   #BIT7, &P9OUT           ;Toggle P9.7 green LED
+        CALL    #Delay
+        jmp     MainLoop
+
+Delay:
+        MOV.W #60000, R7
+        CALL #DelayDecrease
+        RET
+DelayDecrease:
+        DEC R7
+        JNZ DelayDecrease
+        RET
+      
+
+        JMP $                           ; jump to current location '$'
+                                        ; (endless loop)
+        nop
+        END
