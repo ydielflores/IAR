@@ -64,6 +64,42 @@
         <LiveEnabled>0</LiveEnabled>
         <LiveFile>PowerLogLive.log</LiveFile>
     </PowerLog>
+    <EEM_State_Storage>
+        <Buffer>010000000000000000000000</Buffer>
+    </EEM_State_Storage>
+    <EEM_Sequencer>
+        <Buffer>000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000</Buffer>
+    </EEM_Sequencer>
+    <EEM_Cycle_Counter_0>
+        <Counter0>0000000000000000000000000000000000000000000000000000000000000000</Counter0>
+    </EEM_Cycle_Counter_0>
+    <EEM_Cycle_Counter_1>
+        <Counter1>0000000000000000000000000000000000000000000000000000000000000000</Counter1>
+    </EEM_Cycle_Counter_1>
+    <TermIOLog>
+        <LoggingEnabled>_ 0</LoggingEnabled>
+        <LogFile>_ ""</LogFile>
+    </TermIOLog>
+    <LogFile>
+        <LoggingEnabled>_ 0</LoggingEnabled>
+        <LogFile>_ ""</LogFile>
+        <Category>_ 0</Category>
+    </LogFile>
+    <CallStack>
+        <ShowArgs>0</ShowArgs>
+    </CallStack>
+    <Disassembly>
+        <MixedMode>1</MixedMode>
+    </Disassembly>
+    <PowerProbe>
+        <Frequency>10000</Frequency>
+        <Probe0>Current</Probe0>
+        <ProbeSetup0>0 1 1 2 0 0</ProbeSetup0>
+        <Probe1>Voltage</Probe1>
+        <ProbeSetup1>1 1 1 4 0 0</ProbeSetup1>
+        <Probe2>Energy</Probe2>
+        <ProbeSetup2>4 1 1 10 0 0</ProbeSetup2>
+    </PowerProbe>
     <Breakpoints>
         <Count>0</Count>
     </Breakpoints>
@@ -89,44 +125,8 @@
         <all_registers>0</all_registers>
         <File_name />
     </Memory_Dump>
-    <EEM_State_Storage>
-        <Buffer>010000000000000000000000</Buffer>
-    </EEM_State_Storage>
-    <EEM_Sequencer>
-        <Buffer>000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000</Buffer>
-    </EEM_Sequencer>
-    <EEM_Cycle_Counter_0>
-        <Counter0>0000000000000000000000000000000000000000000000000000000000000000</Counter0>
-    </EEM_Cycle_Counter_0>
-    <EEM_Cycle_Counter_1>
-        <Counter1>0000000000000000000000000000000000000000000000000000000000000000</Counter1>
-    </EEM_Cycle_Counter_1>
-    <TermIOLog>
-        <LoggingEnabled>_ 0</LoggingEnabled>
-        <LogFile>_ ""</LogFile>
-    </TermIOLog>
-    <LogFile>
-        <LoggingEnabled>_ 0</LoggingEnabled>
-        <LogFile>_ ""</LogFile>
-        <Category>_ 0</Category>
-    </LogFile>
     <Aliases>
         <Count>0</Count>
         <SuppressDialog>0</SuppressDialog>
     </Aliases>
-    <CallStack>
-        <ShowArgs>0</ShowArgs>
-    </CallStack>
-    <Disassembly>
-        <MixedMode>1</MixedMode>
-    </Disassembly>
-    <PowerProbe>
-        <Frequency>10000</Frequency>
-        <Probe0>Current</Probe0>
-        <ProbeSetup0>0 1 1 2 0 0</ProbeSetup0>
-        <Probe1>Voltage</Probe1>
-        <ProbeSetup1>1 1 1 4 0 0</ProbeSetup1>
-        <Probe2>Energy</Probe2>
-        <ProbeSetup2>4 1 1 10 0 0</ProbeSetup2>
-    </PowerProbe>
 </settings>

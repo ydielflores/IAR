@@ -7,7 +7,12 @@
         <outputs>
             <file>$PROJ_DIR$\asm.s43</file>
             <file>$PROJ_DIR$\Debug\Obj\asm.r43</file>
+            <file>$TOOLKIT_DIR$\config\linker\lnk430fr6989.xcl</file>
             <file>$PROJ_DIR$\Debug\Exe\buttonControl.d43</file>
+            <file>$TOOLKIT_DIR$\inc\msp430fr6989.h</file>
+            <file>$TOOLKIT_DIR$\config\linker\multiplier32.xcl</file>
+            <file>$PROJ_DIR$\Debug\List\buttonControl.map</file>
+            <file>$TOOLKIT_DIR$\inc\msp430.h</file>
         </outputs>
         <file>
             <name>$PROJ_DIR$\asm.s43</name>
@@ -17,23 +22,37 @@
                     <file> 1</file>
                 </tool>
             </outputs>
+            <inputs>
+                <tool>
+                    <name>A430</name>
+                    <file> 7 4</file>
+                </tool>
+            </inputs>
         </file>
         <file>
             <name>[ROOT_NODE]</name>
             <outputs>
                 <tool>
                     <name>XLINK</name>
-                    <file> 2</file>
+                    <file> 3 6</file>
                 </tool>
             </outputs>
         </file>
-        <forcedrebuild>
-            <name>[MULTI_TOOL]</name>
-            <tool>XLINK</tool>
-        </forcedrebuild>
-        <forcedrebuild>
-            <name>[REBUILD_ALL]</name>
-        </forcedrebuild>
+        <file>
+            <name>$PROJ_DIR$\Debug\Exe\buttonControl.d43</name>
+            <outputs>
+                <tool>
+                    <name>XLINK</name>
+                    <file> 6</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>XLINK</name>
+                    <file> 2 5 1</file>
+                </tool>
+            </inputs>
+        </file>
     </configuration>
     <configuration>
         <name>Release</name>

@@ -1,0 +1,67 @@
+; Use LEDs to indicate if buttons are or not pushed
+;
+; Jos? Navarro-Figueroa
+
+#include "msp430.h"                     ; #define controlled include file
+
+        NAME    main                    ; module name
+
+        PUBLIC  main                    ; make the main label vissible
+                                        ; outside this module
+        ORG     0FFFEh
+        DC16    init                    ; set reset vector to 'init' label
+
+        RSEG    CSTACK                  ; pre-declaration of segment
+        RSEG    CODE                    ; place program in 'CODE' segment
+
+init:   MOV     #SFE(CSTACK), SP        ; set up stack
+
+main:   NOP                             ; main program
+        MOV.W   #WDTPW+WDTHOLD,&WDTCTL  ; Stop watchdog timer
+
+SetupP1:
+        bic.b   #0xFF,&P1SEL0           ; Set PxSel0 and PxSel1 to digital I/O
+        bic.b   #0xFF,&P1SEL1           ; Digital I/O is the default
+        bic.b   #0xFF,&P9SEL0
+        bic.b   #0xFF,&P9SEL1
+        
+        mov.b   #11111001B,&P1DIR       ; Set P1.1 and P1.2 for input and all
+                                        ; other P1 pins for output
+
+        bis.b   #0xFF,&P9DIR            ; Set all P9 pins for output
+
+        mov.b   #00000110B,&P1REN        ; Activate P1.1 and P1.2 programable
+                                        ; pull-up/pull-down resistors
+        bis.b   #00000110B,&P1OUT       ; Set resistors for P1.1 and P1.2 as
+                                        ; as pull-down
+        bic.b   #0x01,&P1OUT            ; Clear P1.0 and P9.7 output latch to
+        bic.b   #0x80,&P9OUT            ; start with both off
+
+UnlockGPIO:                             ; Disable de GPIO power-on default
+        bic.w   #LOCKLPM5,&PM5CTL0      ; high-impedance mode to activade
+                                        ; previously configured port settings
+
+Mainloop:
+        mov.b   &P1IN,R5                ; Copy into R5 P1IN's byte
+        and.b   #00000110B,R5
+        cmp.b   #00000100B,R5
+        jeq     red
+        cmp.b   #00000010B,R5
+        jeq     green
+        cmp.b   #00000000B,R5
+        jeq     both
+        bic.b   #10000000B,&P9OUT
+        bic.b   #00000001B,&P1OUT          
+        jmp     Mainloop
+red:    bis.b   #00000001B,&P1OUT        
+        jmp     Mainloop
+green:  bis.b   #10000000B,&P9OUT
+        jmp     Mainloop
+both:   bis.b   #10000000B,&P9OUT
+        bis.b   #00000001B,&P1OUT
+        jmp     Mainloop
+
+        JMP $                           ; jump to current location '$'
+                                        ; (endless loop)
+        NOP
+        END
