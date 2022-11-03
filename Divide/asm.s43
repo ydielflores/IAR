@@ -59,7 +59,8 @@ DivideLoop:
 IncreaseCounter:
         SUB     R7,R8                   ; the idea to verify if the difference between the
                                         ; total and the dividend would be 0 <= R7 - R8 < R5
-        CMP     R5,R8
+        CMP     R5,R8                   ;This is meant to check if we are pass the out divisor, we can 
+                                        ;stop and save the reminder (R8) for later 
         MOV     R4,R8
         ADD     #1,R6                   ;increase counter by 1
         ADD     R5,R7                   ; multiply

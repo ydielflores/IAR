@@ -23,9 +23,9 @@
 
 if ($debugfile -eq "")
 {
-& "C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.5\common\bin\cspybat" -f "C:\dev\IAR\Divide\settings\divide.Debug.general.xcl" --backend -f "C:\dev\IAR\Divide\settings\divide.Debug.driver.xcl" 
+& "C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.5\common\bin\cspybat" -f "C:\dev\IAR\IAR\Divide\settings\divide.Debug.general.xcl" --backend -f "C:\dev\IAR\IAR\Divide\settings\divide.Debug.driver.xcl" 
 }
 else
 {
-& "C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.5\common\bin\cspybat" -f "C:\dev\IAR\Divide\settings\divide.Debug.general.xcl" --debug_file=$debugfile --backend -f "C:\dev\IAR\Divide\settings\divide.Debug.driver.xcl" 
+& "C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.5\common\bin\cspybat" -f "C:\dev\IAR\IAR\Divide\settings\divide.Debug.general.xcl" --debug_file=$debugfile --backend -f "C:\dev\IAR\IAR\Divide\settings\divide.Debug.driver.xcl" 
 }
