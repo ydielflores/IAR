@@ -1,3 +1,9 @@
+;Contributors:
+  ;Julibert Diaz Collazo (ID: 802-16-1812)
+  ;Zaneisha Estrella Ballester (ID: 802-18-4113)
+  ;Ydiel Z. Flores Torres (ID: 802-14-2452)
+  ;Eduardo R. Fuertes Casse (ID: 802-17-3123)
+
 #include "msp430.h"                     ; #define controlled include file
 
         NAME    main                    ; module name
@@ -41,24 +47,168 @@ SetupButtons:
                                         ; as pull-down
         bis.b   #00000110B,&P1OUT
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        CALL    #Title
+        CALL    #subTitle
+        CALL    #subName1
+        CALL    #subName2
+        CALL    #subName3
+        CALL    #subName4
+        CALL    #subName5
+        CALL    #subName6
+        CALL    #subName7
         
-Title:
-          MOV.W   #2, &LCDCMEMCTL 
+;12 nov 2022           
+subTitle:
+        MOV.W   #2, &LCDCMEMCTL 
          
-          MOV.B   #0x0E, &0xA29    ; K
-          MOV.B   #0x22, &0xA2A
-          MOV.B   #0xEF, &0xA25    ; A
-          MOV.B   #0xB7, &0xA23    ; S
-          MOV.B   #0x90, &0xA32    ; I
-          MOV.B   #0x50, &0xA33
-          MOV.B   #0x6C, &0xA2E    ; N
-          MOV.B   #0x82, &0xA2F
-          MOV.B   #0xFC, &0xA27    ; O
-          
-         
-         RET
+        MOV.B   #0x0E, &0xA29    ; K
+        MOV.B   #0x22, &0xA2A
+        MOV.B   #0xEF, &0xA25    ; A
+        MOV.B   #0xB7, &0xA23    ; S
+        MOV.B   #0x90, &0xA32    ; I
+        MOV.B   #0x50, &0xA33
+        MOV.B   #0x6C, &0xA2E    ; N
+        MOV.B   #0x82, &0xA2F
+        MOV.B   #0xFC, &0xA27    ; O
+        RET
 
+;Purpose: Displays the first name (JULIBE)
+;Pre-conditions: None
+;Post-conditions: The text "JULIBE" appears on the screen
+;Arguments: None 
+;Author: Julibert Diaz 
+;Date: 11/1/2022
+subName1:
+        MOV.W   #2, &LCDCMEMCTL    
+        MOV.B   #0x70, &0xA29 ; J
+        MOV.B   #0x7C, &0xA25 ; U
+        MOV.B   #0x1C, &0xA23 ; L
+        MOV.B   #0x90, &0xA32 ; I
+        MOV.B   #0x50, &0xA33
+        MOV.B   #0xF1, &0xA2E ; B
+        MOV.B   #0x50, &0xA2F
+        MOV.B   #0x9F, &0xA27 ; E
+        RET
+
+;Purpose: Displays the second name (ZANEIS)
+;Pre-conditions: None
+;Post-conditions: The text "ZANEIS" appears on the screen
+;Arguments: None 
+;Author: Zaneisha Estrella-Ballester 
+;Date: 11/1/2022
+subName2:
+        MOV.W   #2, &LCDCMEMCTL
+        MOV.B   #0x90, &0xA29 ; Z
+        MOV.B   #0x28, &0xA2A
+        MOV.B   #0xEF, &0xA25 ; A
+        MOV.B   #0x6C, &0xA23 ; N
+        MOV.B   #0x82, &0xA24
+        MOV.B   #0x9F, &0xA32 ; E
+        MOV.B   #0x90, &0xA2E ; I
+        MOV.B   #0x50, &0xA2F
+        MOV.B   #0xB7, &0xA27 ; S
+        RET
+        
+;Purpose: Displays the third name (YDIEL)
+;Pre-conditions: None
+;Post-conditions: The text "YDIEL" appears on the screen
+;Arguments: None 
+;Author: Ydiel Flores
+;Date: 11/1/2022
+subName3:
+        MOV.W   #2, &LCDCMEMCTL
+        MOV.B   #0xB0, &0xA2A ; Y
+        MOV.B   #0xF0, &0xA25 ; D
+        MOV.B   #0x50, &0xA26 ;
+        MOV.B   #0x90, &0xA23 ; I
+        MOV.B   #0x50, &0xA24
+        MOV.B   #0x9F, &0xA32 ; E
+        MOV.B   #0x1C, &0xA2E ; L
+        RET
+
+;Purpose: Displays the fourth name (EDUARD)
+;Pre-conditions: None
+;Post-conditions: The text "EDUARD" appears on the screen
+;Arguments: None 
+;Author: Eduardo Fuertes 
+;Date: 11/1/2022
+subName4:
+        MOV.W   #2, &LCDCMEMCTL
+        MOV.B   #0x9F, &0xA29 ; E
+        MOV.B   #0xF0, &0xA25 ; D
+        MOV.B   #0x50, &0xA26 ;
+        MOV.B   #0x7C, &0xA23 ; U
+        MOV.B   #0xEF, &0xA32 ; A
+        MOV.B   #0xCF, &0xA2E ; R
+        MOV.B   #0x02, &0xA2F
+        MOV.B   #0xF0, &0xA27 ; D
+        MOV.B   #0x50, &0xA28 ;
+        RET  
+        
+;12 nov 2022   
+subName5:
+        MOV.W   #2, &LCDCMEMCTL 
+        MOV.B #0xF0, &0xA29
+        MOV.B #0x50, &0xA2A ;D
+
+        MOV.B #0xCF, &0xA25
+        MOV.B #0x02, &0xA26 ;R
+
+        MOV.B #0xEF, &0xA23
+        MOV.B #0x00, &0xA24 ;A
+
+        MOV.B #0x9C, &0xA32
+        MOV.B #0x00, &0xA33 ;C
+
+        MOV.B #0x90, &0xA2E
+        MOV.B #0x50, &0xA2F ;I
+
+        MOV.B #0xCF, &0xA27
+        MOV.B #0x02, &0xA28 ;R 
+        RET
+;12 nov 2022   
+subName6:
+        MOV.W #2, &LCDCMEMCTL
+        MOV.B #0x7C, &0xA29
+        MOV.B #0x00, &0xA2A ;U
+
+        MOV.B #0x90, &0xA25
+        MOV.B #0x50, &0xA26 ;I
+
+        MOV.B #0x6C, &0xA23
+        MOV.B #0xA0, &0xA24 ;M
+
+        MOV.B #0x9F, &0xA32
+        MOV.B #0x00, &0xA33 ;E
+
+        MOV.B #0xCF, &0xA2E
+        MOV.B #0x02, &0xA2F ;R
+
+        MOV.B #0x8F, &0xA27
+        MOV.B #0x00, &0xA28 ;F
+        RET
+        
+;12 nov 2022        
+subName7:
+        MOV.W #2, &LCDCMEMCTL
+        MOV.B #0xFC, &0xA29
+        MOV.B #0x00, &0xA2A ;O
+
+        MOV.B #0xCF, &0xA25
+        MOV.B #0x02, &0xA26 ;R
+
+        MOV.B #0xEF, &0xA23
+        MOV.B #0x00, &0xA24 ;A
+
+        MOV.B #0x0C, &0xA32
+        MOV.B #0x28, &0xA33 ;V
+
+        MOV.B #0xEF, &0xA2E
+        MOV.B #0x00, &0xA2F ;A
+
+        MOV.B #0x6C, &0xA27
+        MOV.B #0x82, &0xA28 ;N
+        RET
+        
         JMP $                           ; jump to current location '$'
                                         ; (endless loop)
         NOP

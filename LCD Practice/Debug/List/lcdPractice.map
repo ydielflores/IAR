@@ -2,7 +2,7 @@
 #                                                                              #
 #      IAR Universal Linker V6.6.2.104                                         #
 #                                                                              #
-#           Link time     =  12/Nov/2022  23:03:12                             #
+#           Link time     =  13/Nov/2022  00:05:32                             #
 #           Target CPU    =  MSP430                                            #
 #           List file     =  "C:\dev\IAR\IAR\LCD Practice\Debug\List\lcdPracti #
 #                            ce.map"                                           #
@@ -11,7 +11,7 @@
 #                            Format: ubrof10                                   #
 #                            UBROF version 10.0.6                              #
 #                            Using library modules for C-SPY (-rt)             #
-#           Command line  =  -f C:\Users\Ydiel\AppData\Local\Temp\EW1F48.tmp   #
+#           Command line  =  -f C:\Users\Ydiel\AppData\Local\Temp\EW3068.tmp   #
 #                            ("C:\dev\IAR\IAR\LCD Practice\Debug\Obj\asm.r43"  #
 #                            -o                                                #
 #                            "C:\dev\IAR\IAR\LCD Practice\Debug\Exe\lcdPractic #
@@ -131,7 +131,7 @@ CSTACK
   Segment part 0. ROOT 
     -------------------------------------------------------------------------
 <CODE> 1 (was CODE)
-  Relative segment, address: 4400 - 4497 (0x98 bytes), align: 1
+  Relative segment, address: 4400 - 4661 (0x262 bytes), align: 1
   Segment part 1. ROOT        Intra module refs:   Absolute parts
            ENTRY                   ADDRESS         REF BY
            =====                   =======         ======
@@ -143,7 +143,14 @@ CSTACK
            Initialize              4400 
            LCD                     4420 
            SetupButtons            443A 
-           Title                   4458 
+           subTitle                4474 
+           subName1                44B0 
+           subName2                44E6 
+           subName3                4522 
+           subName4                4552 
+           subName5                458C 
+           subName6                45D2 
+           subName7                4618 
 
 
 
@@ -158,7 +165,7 @@ CSTACK
 SEGMENT              SPACE    START ADDRESS   END ADDRESS     SIZE  TYPE  ALIGN
 =======              =====    =============   ===========     ====  ====  =====
 CSTACK                                 2360 - 23FF              A0   rel    1
-<CODE> 1                               4400 - 4497              98   rel    1
+<CODE> 1                               4400 - 4661             262   rel    1
                                        FFFE - FFFF               2  aseg  
 
                 ****************************************
@@ -167,7 +174,7 @@ CSTACK                                 2360 - 23FF              A0   rel    1
                 *                                      *
                 ****************************************
 
- 152 bytes of CODE memory (+ 2 absolute )
+ 610 bytes of CODE memory (+ 2 absolute )
  160 bytes of DATA memory
 
 Errors: none
