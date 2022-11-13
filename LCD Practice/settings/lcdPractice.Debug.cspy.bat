@@ -25,7 +25,7 @@ if not "%~1" == "" goto debugFile
 
 @echo on 
 
-"C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.5\common\bin\cspybat" -f "C:\dev\IAR\IAR\4 Button Control\settings\buttonControl.Debug.general.xcl" --backend -f "C:\dev\IAR\IAR\4 Button Control\settings\buttonControl.Debug.driver.xcl" 
+"C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.5\common\bin\cspybat" -f "C:\dev\IAR\IAR\LCD Practice\settings\lcdPractice.Debug.general.xcl" --backend -f "C:\dev\IAR\IAR\LCD Practice\settings\lcdPractice.Debug.driver.xcl" 
 
 @echo off 
 goto end 
@@ -34,7 +34,7 @@ goto end
 
 @echo on 
 
-"C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.5\common\bin\cspybat" -f "C:\dev\IAR\IAR\4 Button Control\settings\buttonControl.Debug.general.xcl" "--debug_file=%~1" --backend -f "C:\dev\IAR\IAR\4 Button Control\settings\buttonControl.Debug.driver.xcl" 
+"C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.5\common\bin\cspybat" -f "C:\dev\IAR\IAR\LCD Practice\settings\lcdPractice.Debug.general.xcl" "--debug_file=%~1" --backend -f "C:\dev\IAR\IAR\LCD Practice\settings\lcdPractice.Debug.driver.xcl" 
 
 @echo off 
 :end

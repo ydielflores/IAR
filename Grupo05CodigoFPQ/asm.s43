@@ -1,0 +1,2099 @@
+#include "msp430.h"                     ; #define controlled include file
+
+        NAME    main                    ; module name
+
+        PUBLIC  main                    ; make the main label visible
+                                        ; outside this module
+        ORG     0FFFEh
+        DC16    init                    ; set reset vector to 'init' label
+
+        RSEG    CSTACK                  ; pre-declaration of segment
+        RSEG    CODE                    ; place program in 'CODE' segment
+
+init:   MOV     #SFE(CSTACK), SP        ; set up stack
+
+main:   NOP                             ; main program
+        MOV.W   #WDTPW+WDTHOLD,&WDTCTL  ; Stop watchdog timer
+
+        ;Enable LCD segments 0-21, 26-43
+
+        MOV.W   #0xffff, &LCDCPCTL0
+        MOV.W   #0xfc3f, &LCDCPCTL1
+        MOV.W   #0x0fff, &LCDCPCTL2
+        
+UnlockGPIO:
+        BIC.W   #LOCKLPM5, &PM5CTL0
+        
+Initialize LCD:         
+        MOV.W   #0x041e, &LCDCCTL0      
+        MOV.W   #0x0208, &LCDCVCTL      ;Enable charge pump and select internal reference for it         
+        MOV.W    #0X8000, &LCDCCPCTL     ;Clock syncrhonization enabled         
+        MOV.W   #2, &LCDCMEMCTL         ;Clear LCD memory 
+        
+        BIS.W   #1, &LCDCCTL0           ;Turn LCD on 
+
+SetupButtons:
+        bic.b   #0xFF,&P1SEL0           ; Set PxSel0 and PxSel1 to digital I/O
+        bic.b   #0xFF,&P1SEL1           ; Digital I/O is the default
+        mov.b   #11111001B,&P1DIR       ; Set P1.1 and P1.2 for input and all
+                                        ; other P1 pins for output
+        mov.b   #00000110B,&P1REN       ; Set resistors for P1.1 and P1.2 as
+                                        ; as pull-down
+        bis.b   #00000110B,&P1OUT
+
+
+
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+        ;Title 
+        CALL    #ShowTitle
+        CALL    #ReadS1
+        CALL    #Delay
+        
+        
+        ; Initializing the index value of the name list
+        MOV.B   #0,R6
+        ; Clearing flag values
+        CALL    #clearFlags
+        CALL    #showNamesLoop
+        
+        JMP     menuSection1
+        
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+; Purpose: Resets the counter that points to the display choice 
+; Pre-conditions: None
+; Post-conditions: Stores 0 in R6
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/1/2022
+resetChoiceList:
+        MOV.B   #0,R6
+        CALL    #clearFlags
+        CALL    #Delay
+        RET
+
+
+;Purpose: Display the title "F(P.Q)"
+;Pre-conditions: None
+;Post-conditions: The text "F(P.Q)" appears on the screen
+;Arguments: None 
+;Author: Eduardo Fuertes 
+;Date: 11/1/2022
+ShowTitle: 
+        MOV.W   #2, &LCDCMEMCTL
+        MOV.B   #0x8E, &0xA29 ; F
+        MOV.B   #0x22, &0xA26 ; (
+        MOV.B   #0xCF, &0xA23 ; P
+        MOV.B   #0x01, &0xA24 ; .
+        MOV.W   #0x02FC, &0xA32 ; Q
+        MOV.B   #0x88, &0xA2F ; )
+        RET
+        
+               
+;Purpose: Waits for the user to press the S1 button 
+;Pre-conditions: P1.1 S1 has been configured correctly 
+;Post-conditions: The bit corresponding to S1 is 0 
+;Arguments: None 
+;Author: Ydiel Flores 
+;Date: 11/1/2022
+ReadS1:
+        MOV.B   &P1IN,R5                ; Copy into R5 P1IN's byte
+        AND.B   #00000110B,R5
+        CMP.B   #00000100B,R5
+        JNE     ReadS1                  
+        RET
+
+
+;Purpose: Waits for the user to press the S2 button 
+;Pre-conditions: P1.2 S2 has been configured correctly 
+;Post-conditions: The bit corresponding to S2 is 0 
+;Arguments: None 
+;Author: Julibert Diaz 
+;Date: 11/1/2022
+ReadS2:
+        MOV.B   &P1IN,R5                ; Copy into R5 P1IN's byte
+        AND.B   #00000110B,R5
+        CMP.B   #00000010B,R5
+        JNE     ReadS2                  
+        RET     
+
+
+; Purpose: Displaying the names according to the index value
+; Pre-conditions: Name index value starts at 0
+; Post-conditions: Displays a name from the list of names
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/1/2022
+showNamesLoop:
+        CALL    #showCurrentName
+        CALL    #clearFlags
+        CALL    #iterateNameList                
+        JN      break                   ; Breaks the loop if S2 was pressed 
+        JMP     showNamesLoop
+        
+        
+;Purpose: Displays the appropiate name on the display
+;Pre-conditions: User input affecting the value of R6
+;Post-conditions: Will display the name accoridng to the value of R6
+;Arguments: None 
+;Author: Eduardo Fuertes 
+;Date: 11/1/2022
+showCurrentName:
+        cmp     #0,R6
+        jeq     ShowName1
+        cmp     #1,R6
+        jeq     ShowName2
+        cmp     #2,R6
+        jeq     ShowName3
+        jmp     ShowName4
+        
+        
+;Purpose: Displays the first name (JULIBE)
+;Pre-conditions: None
+;Post-conditions: The text "JULIBE" appears on the screen
+;Arguments: None 
+;Author: Julibert Diaz 
+;Date: 11/1/2022
+ShowName1:
+        MOV.W   #2, &LCDCMEMCTL    
+        MOV.B   #0x70, &0xA29 ; J
+        MOV.B   #0x7C, &0xA25 ; U
+        MOV.B   #0x1C, &0xA23 ; L
+        MOV.B   #0x90, &0xA32 ; I
+        MOV.B   #0x50, &0xA33
+        MOV.B   #0xF1, &0xA2E ; B
+        MOV.B   #0x50, &0xA2F
+        MOV.B   #0x9F, &0xA27 ; E
+        RET
+
+
+;Purpose: Displays the second name (ZANEIS)
+;Pre-conditions: None
+;Post-conditions: The text "ZANEIS" appears on the screen
+;Arguments: None 
+;Author: Zaneisha Estrella-Ballester 
+;Date: 11/1/2022
+ShowName2:
+        MOV.W   #2, &LCDCMEMCTL
+        MOV.B   #0x90, &0xA29 ; Z
+        MOV.B   #0x28, &0xA2A
+        MOV.B   #0xEF, &0xA25 ; A
+        MOV.B   #0x6C, &0xA23 ; N
+        MOV.B   #0x82, &0xA24
+        MOV.B   #0x9F, &0xA32 ; E
+        MOV.B   #0x90, &0xA2E ; I
+        MOV.B   #0x50, &0xA2F
+        MOV.B   #0xB7, &0xA27 ; S
+        RET
+
+
+;Purpose: Displays the third name (YDIEL)
+;Pre-conditions: None
+;Post-conditions: The text "YDIEL" appears on the screen
+;Arguments: None 
+;Author: Ydiel Flores
+;Date: 11/1/2022
+ShowName3:
+        MOV.W   #2, &LCDCMEMCTL
+        MOV.B   #0xB0, &0xA2A ; Y
+        MOV.B   #0xF0, &0xA25 ; D
+        MOV.B   #0x50, &0xA26 ;
+        MOV.B   #0x90, &0xA23 ; I
+        MOV.B   #0x50, &0xA24
+        MOV.B   #0x9F, &0xA32 ; E
+        MOV.B   #0x1C, &0xA2E ; L
+        RET
+
+
+;Purpose: Displays the fourth name (EDUARD)
+;Pre-conditions: None
+;Post-conditions: The text "EDUARD" appears on the screen
+;Arguments: None 
+;Author: Eduardo Fuertes 
+;Date: 11/1/2022
+ShowName4:
+        MOV.W   #2, &LCDCMEMCTL
+        MOV.B   #0x9F, &0xA29 ; E
+        MOV.B   #0xF0, &0xA25 ; D
+        MOV.B   #0x50, &0xA26 ;
+        MOV.B   #0x7C, &0xA23 ; U
+        MOV.B   #0xEF, &0xA32 ; A
+        MOV.B   #0xCF, &0xA2E ; R
+        MOV.B   #0x02, &0xA2F
+        MOV.B   #0xF0, &0xA27 ; D
+        MOV.B   #0x50, &0xA28 ;
+        RET       
+        
+        
+; Purpose: Iterating the names each time S1 is pressed
+; Pre-conditions: User input
+; Post-conditions: Iterates the names
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/1/2022
+iterateNameList:
+        CALL    #getUserInput
+        JEQ     nextName                ; S1 was pressed
+        RET
+
+
+; Purpose: Incrementes the counter that points to the name we should display
+; Pre-conditions: None
+; Post-conditions: Increments R6
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/1/2022
+nextName:
+        INC     R6
+        CMP     #4,R6
+        JEQ     resetChoiceList                 ; Go back to the start of the list if we passed the end of the list
+        CALL    #Delay
+        RET
+        
+        
+; Purpose: Break from a call usually after checking the value from one of the flags (equivalent of "break" in python)
+; Pre-conditions: None
+; Post-conditions: Breaks from the last call
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/1/2022
+break:
+        RET
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+menuSection1:
+        
+        
+        CALL    #initMenu1                      ; Initialize this part of the menu
+        CALL    #menu1Loop                      ; Menu loop
+        CALL    #saveSelection1                 ; Saves selection after ending loop
+        JMP     menuSection2                    ; Go to next part of the menu
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+; Purpose: Initializes the first part of the menu
+; Pre-conditions:
+; Post-conditions: Sets led display and other values
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/1/2022
+initMenu1:
+        CALL    #Delay
+        mov.w   #2, &LCDCMEMCTL                 ; Clear led display
+        CALL    #showQ1                         ; Sets the question for this part
+        mov.B   #0, R6                          ; Initialize first choice
+        CALL    #clearFlags                     ; Clearing flag values
+        RET
+
+
+; Purpose: Displays the question for menu part 1
+; Pre-conditions: None
+; Post-conditions: Displays the text "S/U?"
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/1/2022
+showQ1:
+        MOV.B   #0xB7, &0xA29 ; S
+        MOV.B   #0x28, &0xA26 ; /
+        MOV.B   #0x7C, &0xA23 ; U
+        MOV.B   #0xC1, &0xA32 ; ?
+        MOV.B   #0x10, &0xA33
+        RET
+        
+        
+; Purpose: Displays the first part of the menu
+; Pre-conditions: None
+; Post-conditions: Displays the first part of the menu
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/1/2022
+menu1Loop:
+        CALL    #showCurrentSel1
+        CALL    #clearFlags
+        CALL    #iterateQ1                
+        JN      break                   ; Breaks the loop if S2 was pressed
+        JMP     menu1Loop
+
+
+; Purpose: Displays the current selection for menu1
+; Pre-conditions: User input
+; Post-conditions: Displays "S" or "U" depending on the ammount of S1 presses
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/1/2022
+showCurrentSel1:
+        cmp     #0,R6
+        jeq     sel1Option1
+        jmp     sel1Option2
+
+
+; Purpose: Selection display functions
+; Pre-conditions: R6 value
+; Post-conditions: Displays selection according to the value in R6
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/1/2022
+sel1Option1:
+        BIC.B   #0xFF, &0xA27
+        BIC.B   #0xFF, &0xA28
+        MOV.B   #0xB7, &0xA27 ; S
+        RET
+sel1Option2:
+        BIC.B   #0xFF, &0xA27
+        BIC.B   #0xFF, &0xA28
+        MOV.B   #0x7C, &0xA27 ; U
+        RET        
+
+
+; Purpose: Iterating the options of Q1 each time S1 is pressed
+; Pre-conditions: User input
+; Post-conditions: Iterates the options for question #1
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/1/2022
+iterateQ1:
+        CALL    #getUserInput
+        JEQ     nextSel1                ; S1 was pressed
+        RET
+
+
+; Purpose: Incrementes the counter that points to the choice we should display for Q1
+; Pre-conditions: None
+; Post-conditions: Increments R6
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/1/2022
+nextSel1:
+        INC     R6
+        CMP     #2,R6
+        JEQ     resetChoiceList           ; Go back to the start of the list if we passed the end of the list
+        CALL    #Delay
+        RET
+
+
+; Purpose: Saves the selected choice for Q1
+; Pre-conditions: None
+; Post-conditions: Stores the choice value in R8
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+saveSelection1:
+        MOV.B   R6,R8
+        RET        
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+menuSection2:
+        ; Initialize first choice
+        CALL    #initMenu2                      ; Initialize this part of the menu
+        CALL    #menu2Loop                      ; Menu loop
+        CALL    #saveSelection2                 ; Saves selection after ending loop
+        JMP     menuSection3                    ; Go to next part of the menu
+        
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+; Purpose: Initializes the second part of the menu
+; Pre-conditions: None
+; Post-conditions: Sets led display and other values
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+initMenu2:
+        CALL    #Delay
+        mov.w   #2, &LCDCMEMCTL                 ; Clear led display
+        CALL    #showQ2                         ; Sets the question for this part
+        mov.B   #0, R6                          ; Initialize first choice
+        CALL    #clearFlags                     ; Clearing flag values
+        RET
+
+
+; Purpose: Displays the question for menu part 2
+; Pre-conditions: None
+; Post-conditions: Displays the text "D/B?"
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+showQ2:
+        MOV.B   #0xF0, &0xA29 ; D
+        MOV.B   #0x50, &0xA2A ;
+        MOV.B   #0x28, &0xA26 ; /
+        MOV.B   #0xF1, &0xA23 ; B
+        MOV.B   #0x50, &0xA24
+        MOV.B   #0xC1, &0xA32 ; ?
+        MOV.B   #0x10, &0xA33
+        RET
+        
+        
+; Purpose: Displays the second part of the menu
+; Pre-conditions: None
+; Post-conditions: Displays the second part of the menu
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+menu2Loop:
+        CALL    #showCurrentSel2
+        CALL    #clearFlags
+        CALL    #iterateQ2                
+        JN      break                   ; Breaks the loop if S2 was pressed
+        JMP     menu2Loop
+
+
+; Purpose: Displays the current selection for menu2
+; Pre-conditions: User input
+; Post-conditions: Displays "D" or "B" depending on the ammount of S1 presses
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+showCurrentSel2:
+        cmp     #0,R6
+        jeq     sel2Option1
+        jmp     sel2Option2
+
+
+; Purpose: Selection display functions
+; Pre-conditions: R6 value
+; Post-conditions: Displays selection according to the value in R6
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+sel2Option1:
+        BIC.B   #0xFF, &0xA27
+        BIC.B   #0xFF, &0xA28
+        MOV.B   #0xF0, &0xA27 ; D
+        MOV.B   #0x50, &0xA28 ; 
+        RET
+sel2Option2:
+        BIC.B   #0xFF, &0xA27
+        BIC.B   #0xFF, &0xA28
+        MOV.B   #0xF1, &0xA27 ; B
+        MOV.B   #0x50, &0xA28
+        RET
+        
+
+; Purpose: Iterating the options of Q2 each time S1 is pressed
+; Pre-conditions: User input
+; Post-conditions: Iterates the options for question #2
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+iterateQ2:
+        CALL    #getUserInput
+        JEQ     nextSel2                ; S1 was pressed
+        RET
+
+
+; Purpose: Incrementes the counter that points to the choice we should display for Q2
+; Pre-conditions: None
+; Post-conditions: Increments R6
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+nextSel2:
+        INC     R6
+        CMP     #2,R6
+        JEQ     resetChoiceList           ; Go back to the start of the list if we passed the end of the list
+        CALL    #Delay
+        RET
+
+
+; Purpose: Saves the selected choice for Q2
+; Pre-conditions: None
+; Post-conditions: Stores the choice value in R9
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+saveSelection2:
+        MOV.B   R6,R9
+        RET
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+menuSection3:
+
+        
+        ; Initialize first choice
+        CALL    #initMenu3                      ; Initialize this part of the menu
+        CALL    #menu3Loop                      ; Menu loop
+        CALL    #saveSelection3                 ; Saves selection after ending loop
+        JMP     menuSection4                    ; Go to next part of the menu
+        
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+; Purpose: Initializes the third part of the menu
+; Pre-conditions: None
+; Post-conditions: Sets led display and other values
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+initMenu3:
+        CALL    #Delay
+        mov.w   #2, &LCDCMEMCTL                 ; Clear led display
+        CALL    #showQ3                         ; Sets the question for this part
+        mov.B   #0, R6                          ; Initialize first choice
+        CALL    #clearFlags                     ; Clearing flag values
+        RET
+
+
+; Purpose: Displays the question for menu part 2
+; Pre-conditions: None
+; Post-conditions: Displays the text "D/B?"
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+showQ3:
+        MOV.B   #0xF0, &0xA29 ; D
+        MOV.B   #0x50, &0xA2A ;
+        MOV.B   #0x90, &0xA25 ; I
+        MOV.B   #0x50, &0xA26
+        MOV.B   #0xBD, &0xA23 ; G
+        MOV.B   #0xC1, &0xA32 ; ?
+        MOV.B   #0x10, &0xA33
+        RET
+        
+        
+; Purpose: Displays the third part of the menu
+; Pre-conditions: None
+; Post-conditions: Displays the third part of the menu
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+menu3Loop:
+        CALL    #showCurrentSel3
+        CALL    #clearFlags
+        CALL    #iterateQ3                
+        JN      break                   ; Breaks the loop if S2 was pressed
+        JMP     menu3Loop
+
+
+; Purpose: Displays the current selection for menu3
+; Pre-conditions: Binary or Decimal choice that is stored in R9
+; Post-conditions: Displays a number from "0" to "6" depending on the previous choices
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+showCurrentSel3:
+        cmp     #0,R9
+        jeq     decimalDigitSelection   ; Decimal number was selected
+        jmp     binaryDigitSelection    ; Binary number was selected
+
+
+; Purpose: Displays the digit number selection depending on the type of number the user selected
+; Pre-conditions: User chose a decimal number or a binary number
+; Post-conditions: Displays "0" or "1" if decimal, else "0" - "6" are the options
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+decimalDigitSelection:
+        cmp     #0,R6
+        jeq     showNum1
+        jmp     showNum2
+binaryDigitSelection:
+        cmp     #0,R6
+        jeq     showNum0
+        cmp     #1,R6
+        jeq     showNum1
+        cmp     #2,R6
+        jeq     showNum2
+        cmp     #3,R6
+        jeq     showNum3
+        cmp     #4,R6
+        jeq     showNum4
+        cmp     #5,R6
+        jeq     showNum5
+        jmp     showNum6
+        
+        
+; Purpose: Sets up Led display numbers functions
+; Pre-conditions: None
+; Post-conditions: Each funciton displays a number
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+showNum0:
+        BIC.B   #0xFF, &0xA27
+        MOV.B   #0xFC, &0xA27 ; Sets up Led display number for 0 
+        RET
+showNum1:
+        BIC.B   #0xFF, &0xA27
+        MOV.B   #0x60, &0xA27 ; Sets up Led display number for 1
+        RET
+showNum2:
+        BIC.B   #0xFF, &0xA27
+        MOV.B   #0xDB, &0xA27 ; Sets up Led display number for 2 
+        RET
+showNum3:
+        BIC.B   #0xFF, &0xA27
+        MOV.B   #0xF3, &0xA27 ; Sets up Led display number for 3
+        RET
+showNum4:
+        BIC.B   #0xFF, &0xA27
+        MOV.B   #0x67, &0xA27 ; Sets up Led display number for 4
+        RET
+showNum5:
+        BIC.B   #0xFF, &0xA27
+        MOV.B   #0xB7, &0xA27 ; Sets up Led display number for 5
+        RET
+showNum6:
+        BIC.B   #0xFF, &0xA27
+        MOV.B   #0xBF, &0xA27 ; Sets up Led display number for 6 
+        RET
+showNum7:
+        BIC.B   #0xFF, &0xA27
+        MOV.B   #0xE0, &0xA27 ; Sets up Led display number for 7
+        RET
+showNum8:
+        BIC.B   #0xFF, &0xA27
+        MOV.B   #0xFF, &0xA27 ; Sets up Led display number for 8
+        RET
+showNum9:
+        BIC.B   #0xFF, &0xA27
+        MOV.B   #0xF7, &0xA27 ; Sets up Led display number for 9 
+        RET       
+
+
+; Purpose: Iterating the options of Q3 each time S1 is pressed
+; Pre-conditions: User input
+; Post-conditions: Iterates the options for question #3
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+iterateQ3:
+        CALL    #getUserInput
+        JEQ     nextSel3                ; S1 was pressed
+        RET
+
+
+; Purpose: Incrementes the counter that points to the choice we should display for Q3
+; Pre-conditions: None
+; Post-conditions: Increments R6
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+nextSel3:
+        INC     R6
+        CMP     #0,R9
+        JEQ     nextSelDec
+        JMP     nextSelBin
+nextSelDec:
+        CMP     #2,R6
+        JEQ     resetChoiceList
+        CALL    #Delay
+        RET
+nextSelBin:
+        CMP     #7,R6
+        JEQ     resetChoiceList
+        CALL    #Delay
+        RET       
+
+
+; Purpose: Saves the selected choice for Q3
+; Pre-conditions: None
+; Post-conditions: Stores the choice value in R10
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+saveSelection3:
+        MOV.B   R6,R10
+        CMP     #1,R9
+        JEQ     break
+        INC     R10
+        RET
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+menuSection4:
+        
+        CALL    #initMenu4
+        CALL    #setPoint
+        CALL    #generateNum
+        JMP     conversionSection
+        
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+; Purpose: Jumps to the first part of the menu
+; Pre-conditions: None
+; Post-conditions: Begins the first part of the menu
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/7/2022
+menuSection1Ladder1:
+        JMP     menuSection1
+
+
+; Purpose: Initializes the fourth part of the menu
+; Pre-conditions: None
+; Post-conditions: Sets led display and other values
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+initMenu4:
+        MOV.B   #0,R13                          ; Contains the number representing the whole part
+        MOV.B   #0,R14                          ; Contains the number representing the fractional part
+        CALL    #Delay
+        MOV.W   #2, &LCDCMEMCTL                 ; Clear led display
+        CALL    #initNumDisplay                 ; Sets the spaces to write numbers (_ _ _ _ _ _)
+        MOV.B   #0, R6                          ; Initialize first choice
+        MOV.B   #0, R11                         ; Initialize position counter
+        CALL    #clearFlags                     ; Clearing flag values
+        RET    
+        
+; Purpose: Initializes the number display
+; Pre-conditions: None
+; Post-conditions: Bunch of "_" are displayed as empty spaces
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022      
+initNumDisplay
+        MOV.B   #0x10,&0xA25
+        MOV.B   #0x10,&0xA23
+        MOV.B   #0x10,&0xA32
+        MOV.B   #0x10,&0xA2E
+        MOV.B   #0x10,&0xA27
+        RET
+        
+        
+; Purpose: Displays the fractional point in the appropiate location
+; Pre-conditions: None
+; Post-conditions: Point is displayed
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+setPoint:
+        CMP     #0,R9
+        JEQ     decimalPoint
+        JMP     binaryPoint
+decimalPoint:
+        CMP     #1,R10
+        JEQ     atSpace2
+        JMP     atSpace3
+binaryPoint:
+        CMP     #1,R10
+        JEQ     atSpace1
+        CMP     #2,R10
+        JEQ     atSpace2
+        CMP     #3,R10
+        JEQ     atSpace3
+        CMP     #4,R10
+        JEQ     atSpace4
+        CMP     #5,R10
+        JEQ     atSpace5
+        RET
+atSpace1:
+        MOV.B   #1,&0xA2A
+        RET
+atSpace2:
+        MOV.B   #1,&0xA26
+        RET
+atSpace3:
+        MOV.B   #1,&0xA24
+        RET
+atSpace4:
+        MOV.B   #1,&0xA33
+        RET
+atSpace5:
+        MOV.B   #1,&0xA2F
+        RET 
+  
+; Purpose: Displays the fractional point in the appropiate location
+; Pre-conditions: None
+; Post-conditions: Point is displayed
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022        
+generateNum:
+        CALL    #startPositionCounter
+        CALL    #checkLoop1
+        CALL    #saveSelection
+        CALL    #resetChoice
+        CALL    #numLoop2
+        CALL    #saveSelection
+        CALL    #resetChoice
+        CALL    #numLoop3
+        CALL    #saveSelection
+        CALL    #resetChoice
+        CALL    #numLoop4
+        CALL    #saveSelection
+        CALL    #resetChoice
+        CALL    #numLoop5
+        CALL    #saveSelection
+        CALL    #resetChoice
+        CALL    #numLoop6
+        CALL    #saveSelection
+        CALL    #resetChoice
+        RET
+startPositionCounter:
+        CMP     #0,R9
+        JEQ     break
+        INC     R11
+        RET
+
+
+; Purpose: Resets choice counter after confirming a digit
+; Pre-conditions: None
+; Post-conditions: 0 is stored in R6
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+resetChoice:
+        CALL    #Delay
+        MOV.B   #0,R6
+        INC     R11
+        RET
+
+
+; Purpose: Checks if the user selected a signed decimal
+; Pre-conditions: None
+; Post-conditions: Directs the user to the sign options if it was selected
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+checkLoop1:
+        CMP.B   #1,R9
+        JEQ     numLoop1                        ; Binary was selected
+        CMP.B   #1,R8
+        JEQ      break                           ; Unsigned decimal was selected
+        JMP     signLoop                        ; Signed decimal was selected
+
+
+; Purpose: Iterates the sign options
+; Pre-conditions: None
+; Post-conditions: Displays the appropiate sign in the led display
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+signLoop:
+        CALL    #showSign
+        CALL    #getUserInput
+        JN      break
+        JEQ     nextSign 
+        JMP     signLoop
+nextSign:                               ; Increases counter to show next sign
+        CALL    #Delay
+        INC     R6
+        CMP     #2,R6
+        JEQ     resetSign
+        JMP     signLoop       
+resetSign:                              ; Points back to first choice if counter exceeds max
+        MOV.B   #0,R6
+        JMP     signLoop
+        
+       
+; Purpose: Shows the currently selected sign
+; Pre-conditions: None
+; Post-conditions: The current sign is displayed
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022       
+showSign:
+        CMP     #0,R6
+        JEQ     showPlus
+        JMP     showNeg        
+showPlus:
+        BIC.B   #0xFF,&0xA29
+        BIC.B   #0xFF,&0xA2A
+        MOV.B   #0x03,&0xA29
+        MOV.B   #0x50,&0xA2A
+        RET
+showNeg:
+        BIC.B   #0xFF,&0xA29
+        BIC.B   #0xFF,&0xA2A
+        MOV.B   #0x03,&0xA29
+        RET
+
+
+; Purpose: Implements the selecting process for each digit of the number
+; Pre-conditions: None
+; Post-conditions: Displays the number selected
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+numLoop1:
+        CALL    #getDigitDisplay        ; Get current selection
+        MOV.B   R15,&0xA29              ; Displays current selection
+        CALL    #getUserInput
+        JN      breakLoopHere
+        CALL    #iteratorCall
+        JMP     numLoop1
+numLoop2:
+        CALL    #getDigitDisplay        ; Get current selection
+        MOV.B   R15,&0xA25              ; Displays current selection
+        CALL    #getUserInput
+        JN      breakLoopHere
+        CALL    #iteratorCall
+        JMP     numLoop2
+numLoop3:
+        CALL    #getDigitDisplay        ; Get current selection
+        MOV.B   R15,&0xA23              ; Displays current selection
+        CALL    #getUserInput
+        JN      breakLoopHere
+        CALL    #iteratorCall
+        JMP     numLoop3
+numLoop4:
+        CALL    #getDigitDisplay        ; Get current selection
+        MOV.B   R15,&0xA32              ; Displays current selection
+        CALL    #getUserInput
+        JN      breakLoopHere
+        CALL    #iteratorCall
+        JMP     numLoop4
+numLoop5:
+        CALL    #getDigitDisplay        ; Get current selection
+        MOV.B   R15,&0xA2E              ; Displays current selection
+        CALL    #getUserInput
+        JN      breakLoopHere
+        CALL    #iteratorCall
+        JMP     numLoop5
+numLoop6:
+        CALL    #getDigitDisplay        ; Get current selection
+        MOV.B   R15,&0xA27              ; Displays current selection
+        CALL    #getUserInput
+        JN      breakLoopHere
+        CALL    #iteratorCall
+        JMP     numLoop6
+
+
+; Purpose: Break from a call usually after checking the value from one of the flags (equivalent of "break" in python)
+; Pre-conditions: None
+; Post-conditions: Breaks from the last call
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/1/2022
+breakLoopHere:
+        RET
+
+ 
+; Purpose: Updates the counter to point to the next digit in the list of options
+; Pre-conditions: None
+; Post-conditions: Counter points to the currently selected digit
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022        
+iteratorCall:
+        JEQ     updateCounter           ; Will update counter if S1 was pressed
+        RET
+updateCounter:
+        CALL    #Delay
+        INC     R6
+        CMP     #0,R9                   ; Indicates if a decimal or binary number was selected
+        JEQ     limitDecimal
+        JMP     limitBinary
+limitDecimal:                           ; Points to the first option if counter exceeds decimal limit
+        CMP     #10,R6
+        JEQ     resetDigit
+        RET
+limitBinary:                            ; Points to the first option if counter exceeds binary limit
+        CMP     #2,R6
+        JEQ     resetDigit
+        RET
+resetDigit:
+        MOV.B   #0,R6
+        RET
+        
+
+; Purpose: Multiplies two numbers
+; Pre-conditions: R12 and R13 are the numbers to be multiplied
+; Post-conditions: Multiplies R12 and R13 and stores it in R14
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+multiplyNum:
+        MOV.B   #0,R6                   ; Initialize counter
+        CMP     R13,R12
+        JN      setGreaterMult          ; Results in less iterations for a multiplication
+        MOV.B   #0,R14                  ; Initialize result
+        JMP     multLoop
+setGreaterMult:                         ; Swaps R12 and R13
+        MOV.B   R12,R14
+        MOV.B   R13,R12
+        MOV.B   R14,R13
+        MOV.B   #0,R14
+        JMP     multLoop
+multLoop:
+        INC     R6
+        CMP     R6,R13
+        JN      breakLoopHere
+        ADD.W   R12,R14
+        JMP     multLoop        
+                
+        
+; Purpose: Gets the exponent of conversion A as in 10^A for decimal and 2^A for binary
+; Pre-conditions: Decimal place is determined by R11
+; Post-conditions: Stores the exponent value in R7
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022
+getExponent:
+        CMP     #0,R9
+        JEQ     getDecimalExponent
+        JMP     getBinaryExponent              
+; Gets the exponent for decimal number 10^A
+getDecimalExponent:
+        CMP     #0,R11                  ; Breaks if a sign was selected
+        JEQ     breakLoopHere
+        MOV.B   #0,R6                   ; Exponent counter
+        MOV.B   R11,R7                  ; Start
+        CMP     R11,R10
+        CALL    #wholeFractionalDec
+        MOV.B   R6,R7                   ; The exponent is stored in R7
+        MOV.B   #0,R6                   ; R6 resets
+        RET
+wholeFractionalDec:
+        JN      getFractionalExponentDec
+        JMP     getWholeExponentDec
+getWholeExponentDec:
+        CMP     R7,R10
+        JEQ     breakLoopHere
+        INC     R7
+        INC     R6
+        JMP     getWholeExponentDec
+getFractionalExponentDec:
+        CMP     #5,R7
+        JEQ     breakLoopHere
+        INC     R7
+        INC     R6
+        JMP     getFractionalExponentDec      
+; Gets the exponent for binary number 2^A
+getBinaryExponent:
+        MOV.B   #0,R6                   ; Exponent counter
+        MOV.B   R11,R7                  ; Start
+        CMP     R11,R10
+        CALL    #wholeFractionalBin
+        MOV.B   R6,R7                   ; The exponent is stored in R7
+        MOV.B   #0,R6                   ; R6 resets
+        RET
+wholeFractionalBin:
+        JN      getFractionalExponentBin
+        JMP     getWholeExponentBin
+getWholeExponentBin:
+        CMP     R7,R10
+        JEQ     breakLoopHere
+        INC     R7
+        INC     R6
+        JMP     getWholeExponentBin
+getFractionalExponentBin:
+        CMP     #6,R7
+        JEQ     breakLoopHere
+        INC     R7
+        INC     R6
+        JMP     getFractionalExponentBin
+ 
+
+; Purpose: Gets the value after selecting a digit display
+; Pre-conditions: None
+; Post-conditions: Stores the value at R13 if whole part, otherwise at R14
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022
+saveSelection:
+        CMP     #0,R9
+        JEQ     saveDecimalSelection
+        JMP     saveBinarySelection      
+        
+        
+; Purpose: Gets the numeric value after selecting the decimal digit display
+; Pre-conditions: None
+; Post-conditions: Stores the value at R13 if whole part, otherwise at R14
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022         
+saveDecimalSelection:
+        CMP     #0,R11
+        JEQ     breakLoopHere
+        MOV.B   R6,R5                   ; R5 now contains a factor of mult (Ex  R5 * 10^3)
+        CALL    #getExponent            ; R7 contains the exponent A as in 10^A
+        MOV.B   #1,R6                   ; R6 starts at 1 but it will later contain 10^R7
+        CALL    #getTenMultiplier
+        CALL    #convertNum
+        RET
+convertNum:
+        CALL    #multiplyNums           ; R12 contains R5 * R6
+        CMP     R11,R10
+        JN      saveAsFractional
+        JMP     saveAsWhole
+saveAsWhole:
+        ADD.W   R12,R13
+        RET
+saveAsFractional:
+        ADD.W   R12,R14
+        RET
+
+
+; Purpose: Gets the numeric value after selecting the binary bit display
+; Pre-conditions:
+; Post-conditions: Stores the value at R13 if whole part, otherwise at R14
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022        
+saveBinarySelection:
+        CMP     #0,R6
+        JEQ     breakLoop
+        MOV.B   #1,R5                   ; Factor is 1 by default
+        CALL    #getExponent            ; R7 contains the exponent A as in 2^A or 10^A
+        CMP     R11,R10
+        JN      getFractionFactor          ; Factor is stored in R5
+        JMP     getWholeFactor
+getFractionFactor:
+        CALL    #fractionFactor
+        MOV.B   #1,R6
+        CALL    #getTenMultiplier
+        CALL    #convertNum
+        RET
+getWholeFactor:
+        MOV.B   #1,R6                   ; R6 starts at 1 but it will later contain 10^A or 2^A
+        CALL    #getTwoMultiplier
+        CALL    #convertNum
+        RET
+
+
+; Purpose: Gets the fractional factor of the binary (5, 25, 125, 0625, 03125, 015625)
+; Pre-conditions: R11 indicates the fractional location
+; Post-conditions: Stores the factor on R5
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022
+fractionFactor:
+        MOV.B   R11,R6
+        SUB     R10,R6
+        CMP     #1,R6
+        JEQ     firstFactor
+        CMP     #2,R6
+        JEQ     secondFactor
+        CMP     #3,R6
+        JEQ     thirdFactor
+        CMP     #4,R6
+        JEQ     fourthFactor
+        CMP     #5,R6
+        JEQ     fifthFactor
+        JMP     sixthFactor
+firstFactor:
+        MOV.B   #5,R5
+        RET
+secondFactor:
+        MOV.B   #25,R5
+        RET
+thirdFactor:
+        MOV.B   #125,R5
+        RET
+fourthFactor:
+        MOV.W   #625,R5
+        RET
+fifthFactor:
+        MOV.W   #3125,R5
+        RET
+sixthFactor:
+        MOV.W   #15625,R5
+        RET
+
+
+; Purpose: Gets the number 10^R7
+; Pre-conditions: None
+; Post-conditions: R6 = 10^R7
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022
+getTenMultiplier:
+        CMP     #0,R7
+        JEQ     breakLoop
+        CALL    #multiplyTen
+        DEC     R7
+        JMP     getTenMultiplier
+
+
+; Purpose: Gets the number 2^R7
+; Pre-conditions: None
+; Post-conditions: R6 = 2^R7
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022
+getTwoMultiplier:
+        CMP     #0,R7
+        JEQ     breakLoop
+        CALL    #multiplyTwo
+        DEC     R7
+        JMP     getTwoMultiplier
+
+        
+; Purpose: Gets the number R6*2
+; Pre-conditions: None
+; Post-conditions: R6 = R6 * 2
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022        
+multiplyTwo:
+        ADD.W   R6,R6 ; 2
+        RET
+
+
+; Purpose: Multiplies two numbers
+; Pre-conditions: R5 and R6 are the numbers to be multiplied
+; Post-conditions: Multiplies R5 and R6 and stores it in R12
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/3/2022
+multiplyNums:
+        MOV.B   #0,R7                   ; Initialize counter
+        MOV.B   #0,R12                  ; Initialize result
+        JMP     multiLoop
+multiLoop:
+        INC     R7
+        CMP     R7,R5
+        JN      breakLoop
+        ADD.W   R6,R12
+        JMP     multiLoop
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;     
+      
+conversionSection:
+
+
+        CALL    #initConversion
+        CMP     #0,R9
+        JEQ     choseDecimal
+        JMP     choseBinary
+choseDecimal:
+        CALL    #decToBinConversion              ; If the input is decimal
+        JMP     returningBack
+choseBinary:
+        CALL    #binToDecConversion              ; If the input is binary
+        JMP     returningBack
+returningBack:
+        CALL    #Delay
+        MOV.B   #0,R5
+        CALL    #readAny
+        CALL    #Delay
+        JMP     menuSection1Ladder1              ; Jumping back to the first part of the menu     
+        
+        
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+; Purpose: Initializes the values for the conversion
+; Pre-conditions: None
+; Post-conditions: Values are initiated
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022
+initConversion:
+        mov.b   #0,R7
+        RET     
+
+
+; Purpose: Converts binary to decimal and displays it at screen
+; Pre-conditions: None
+; Post-conditions: Displays decimal result in screen
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022
+binToDecConversion:
+        mov.b   #0,R7
+        call    #setDecSign
+        call    #ifNegativeDecNumber
+        call    #clearOtherNums
+        call    #displayWholeDec
+        call    #displayFractionPoint
+        call    #displayFractionDec
+        ret
+
+
+; Purpose: Converts decimal to binary and displays it at screen
+; Pre-conditions: None
+; Post-conditions: Displays binary result in screen
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022
+decToBinConversion:
+        mov.b   #0,R7
+        call    #setBinSign
+        call    #ifNegativeNumber
+        call    #clearOtherNums
+        call    #displayWholeBin
+        call    #displayFractionBin
+        ret
+               
+; Purpose: Sets the symbol indicating the sign of the number
+; Pre-conditions: R8 indicates if the number is signed or not
+; Post-conditions: A signed bit is displayed at the start of the display
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022
+setDecSign:
+        cmp     #1,R8
+        jeq     clearSign
+        cmp.b   #96,&0xA29
+        jeq     setNegSign
+        jmp     setPosSign
+setNegSign:
+        MOV.W   #2, &LCDCMEMCTL                 ; Clear led display
+        MOV.B   #0x03,&0xA29
+        RET
+setPosSign:
+        MOV.W   #2, &LCDCMEMCTL                 ; Clear led display
+        MOV.B   #0x03,&0xA29
+        MOV.B   #0x50,&0xA2a
+        RET
+clearSign:
+        MOV.W   #2, &LCDCMEMCTL
+        RET
+
+
+; Purpose: Sets the binary bit indicating the sign of the number
+; Pre-conditions: R8 indicates if the number is signed or not
+; Post-conditions: A signed bit is displayed at the start of the display
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022
+setBinSign:
+        cmp     #1,R8
+        jeq     breakLoop       ; Terminate if unsigned was selected
+        cmp.b   #80,&0xA2A
+        jeq     set0Sign
+        jmp     set1Sign
+set1Sign:
+        MOV.W   #2, &LCDCMEMCTL                 ; Clear led display
+        mov.b   #1,R6
+        call    #displayNumber
+        ret
+set0Sign:
+        MOV.W   #2, &LCDCMEMCTL                 ; Clear led display
+        mov.b   #0,R6
+        call    #displayNumber
+        ret
+
+
+; Purpose: Checks if the user entered a negative decimal number to see if its necessary to negate
+; Pre-conditions: None
+; Post-conditions: Negates R13 and R14 if user selected negative decimal number
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022
+ifNegativeDecNumber:
+        CMP.B   #0x50,&0xA2A
+        JEQ     breakLoop
+        CMP.B   #0xFC,&0xA29
+        JEQ     breakLoop
+        CMP.B   #0x00,&0xA29
+        JEQ     breakLoop
+        JMP     negateNumberDec
+
+
+; Purpose: Checks if the user entered a negative number to see if its necessary to negate
+; Pre-conditions: None
+; Post-conditions: Negates R13 and R14 if user selected negative number
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022
+ifNegativeNumber:
+        CMP.B   #96,&0xA29
+        JEQ     negateNumber
+        RET
+
+
+; Purpose: Takes the numeric values at R13 and R14 and negates them (2s compement)
+; Pre-conditions: User selected a negative signed number
+; Post-conditions: R13 and R14 contains their negated values
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022
+negateNumber:
+        CALL    #negateWholePart
+        CALL    #negateFractionalPart
+        RET
+        
+        
+; Purpose: Negates the whole part of the number
+; Pre-conditions: None
+; Post-conditions: Stores the negation at R13
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/6/2022       
+negateWholePart:     
+        MOV.B   #0,R8                   ; Digit Counter
+        MOV.W   R13,R11
+        MOV.W   #0,R13
+        CMP     #0,R11
+        JEQ     breakLoop
+        MOV.W   #1,R5
+findWholeSubstractor:
+        CMP     R5,R11
+        JEQ     negateWhole
+        JN      negateWhole
+        INC.B   R8
+        ADD.W   R5,R5
+        JMP     findWholeSubstractor
+negateWhole:
+        SUB.W   R11,R5
+        MOV.W   R5,R13
+        MOV.W   #0,R5
+        RET
+        
+        
+; Purpose: Negates the fractional part of the number
+; Pre-conditions: None
+; Post-conditions: Stores the negation at R14
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/6/2022       
+negateFractionalPart:
+        MOV.W   #1,R6
+        CMP     #0,R14
+        JEQ     breakLoop
+findFractionalSubstractor:
+        CMP     R6,R14
+        JN      negateFrac
+        CALL    #multiplyTen
+        JMP     findFractionalSubstractor
+negateFrac:
+        SUB     R14,R6
+        MOV.W   R6,R14
+        MOV.W   #0,R6
+        RET
+
+
+; Purpose: Takes the numeric values at R13 and R14 and negates them (2s compement)
+; Pre-conditions: User selected a negative signed number
+; Post-conditions: R13 and R14 contains their negated values
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022
+negateNumberDec:
+        CALL    #negateWholePartDec
+        CALL    #negateFractionalPartDec
+        RET
+        
+        
+; Purpose: Negates the whole part of the number
+; Pre-conditions: None
+; Post-conditions: Stores the negation at R13
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/6/2022       
+negateWholePartDec:
+        MOV.W   R13,R15      
+        MOV.B   #0,R8                   ; Digit Counter
+        MOV.W   R13,R11
+        MOV.W   #0,R13
+        CMP     #0,R11
+        JEQ     breakLoop
+        MOV.W   #1,R5
+findWholeSubstractorDec:
+        CMP     R5,R11
+        JEQ     negateWholeDec
+        JN      negateWholeDec
+        INC.B   R8
+        ADD.W   R5,R5
+        JMP     findWholeSubstractorDec
+negateWholeDec:
+        SUB.W   R11,R5
+        MOV.W   R5,R13
+        MOV.W   #0,R5
+        CMP     #10,R13
+        JN      oneDigit
+        JMP     twoDigit
+oneDigit:
+        MOV.B   #1,R8
+        RET
+twoDigit:
+        MOV.B   #2,R8
+        RET
+        
+        
+; Purpose: Negates the fractional part of the number
+; Pre-conditions: None
+; Post-conditions: Stores the negation at R14
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/6/2022       
+negateFractionalPartDec:
+        MOV.W   #1,R6
+        CMP     #0,R14
+        JEQ     breakLoop
+findFractionalSubstractorDec:
+        CMP     R6,R14
+        JN      negateFracDec
+        CALL    #multiplyTen
+        JMP     findFractionalSubstractorDec
+negateFracDec:
+        SUB     R14,R6
+        MOV.W   R6,R14
+        MOV.W   #0,R6
+        RET
+
+
+; Purpose: Returns how many digits for the whole part
+; Pre-conditions: R9 indicates if a decimal or binary was entered
+; Post-conditions: Stores result at R8
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/6/2022
+getDigitCount:
+        MOV.B   #0,R8
+        CMP     #0,R13
+        JEQ     breakLoop
+        CMP     #1,R9                           ; Bin or Dec
+        JEQ     decimalDigits                   ; Bin to Dec
+        JMP     binaryDigits                    ; Dec to Bin                            
+decimalDigits:
+        MOV.W   #10,R9
+        MOV.W   #100,R15                        ; Adder
+        JMP     countDecLoop
+binaryDigits:
+        MOV.W   #2,R9
+        JMP     countBinLoop
+countDecLoop:
+        CMP     R9,R13
+        JN      finalizeCount
+        ADD     R15,R9
+        INC     R8
+        JMP     countDecLoop
+countBinLoop:
+        CMP     R9,R13
+        JN      finalizeCount
+        ADD     R9,R9
+        INC     R8
+        JMP     countBinLoop
+finalizeCount:
+        MOV.B   R8,R9
+        INC     R9
+        CMP.B   #252,&0xA29                     ; If positive binary
+        JEQ     addOneMore
+        CMP.B   #0x50,&0xA2A                    ; If positive decimal
+        JEQ     addOneMore
+        RET
+addOneMore:
+        INC     R8
+        INC     R9
+        RET
+        
+
+        
+
+; Purpose: Displays binary number for whole part
+; Pre-conditions: R13 contains the numeric value to be converted
+; Post-conditions: Binary bits are displayed for whole part
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/6/2022
+displayWholeBin:
+        CMP.B   #96,&0xA29
+        JEQ     continueDisplay
+        CALL    #getDigitCount
+continueDisplay:
+        MOV.B   R8,R9
+        INC.B   R9                      ; Points to the start of Fractional part
+        CMP     #0,R8
+        JEQ     finalBin
+        MOV.B   R8,R7                   ; R7 is the segment position
+dividingLoop:
+        MOV.B   #2,R11
+        CALL    #divideNum
+        MOV.B   R12,R6                  ; Moving remainder
+        CALL    #displayNumber
+        DEC.B   R7
+        CMP     #0, R7
+        JEQ     finalBin
+        JMP     dividingLoop
+finalBin:
+        CMP.B   #0x03,&0xA29            ; Checking if a sign number/symbol is at the start
+        JEQ     breakLoop
+        CMP.B   #0x60,&0xA29
+        JEQ     breakLoop
+        CMP.B   #0xFC,&0xA29
+        JEQ     breakLoop
+        MOV.B   #2,R11
+        CALL    #divideNum
+        MOV.B   R12,R6                  
+        CALL    #displayNumber
+        RET
+
+
+
+; Purpose: Displays decimal number for whole part
+; Pre-conditions: R13 contains the numeric value to be converted
+; Post-conditions: Decimal digits are displayed for whole part
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/6/2022
+displayWholeDec:
+        CMP.B   #0x00,&0xA29                    ; If unsigned
+        JEQ     getDigitLength
+        CMP.B   #0x50,&0xA2A                    ; If positive
+        JEQ     getDigitLength
+        JMP     continueDecDisplay
+getDigitLength:
+        CALL    #getDigitCount        
+continueDecDisplay:
+        MOV.B   R8,R9
+        INC.B   R9                      ; Points to the start of Fractional part
+        CMP     #0,R8
+        JEQ     finalDec
+        MOV.B   R8,R7                   ; R7 is the segment position
+dividingTenLoop:
+        MOV.B   #10,R11
+        CALL    #divideNum
+        MOV.B   R12,R6                  ; Moving remainder
+        CALL    #displayNumber
+        DEC.B   R7
+        CMP     #0,R7
+        JEQ     finalDec
+        JMP     dividingTenLoop
+finalDec:
+        CMP.B   #0x03,&0xA29            ; Checking if a sign number/symbol is at the start
+        JEQ     breakLoop
+        CMP.B   #0x60,&0xA29
+        JEQ     breakLoop
+        CMP.B   #0xFC,&0xA29
+        JEQ     breakLoop
+        MOV.B   #10,R11
+        CALL    #divideNum
+        MOV.B   R12,R6                  
+        CALL    #displayNumber
+        RET
+
+
+; Purpose: Displays binary bits for fractional part
+; Pre-conditions: None
+; Post-conditions: Binary bits are displayed for fractional part
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/6/2022
+displayFractionBin:
+        MOV.W   R9,R7
+        CMP     #0,R14
+        JEQ     displayZeroBin
+        MOV.W   #1,R6
+        JMP     gettingLimit
+displayZeroBin:
+        MOV.B   #0,R6
+        CALL    #displayNumber
+        RET
+gettingLimit:
+        CMP     R6,R14
+        JN      passLimit
+        CALL    #multiplyTen
+        JMP     gettingLimit
+passLimit:
+        MOV.W   R6,R8
+        MOV.B   #0,R6
+addLoop:
+        CMP     #7,R7
+        JEQ     finishLoop
+        ADD     R14,R14
+        CMP     R14,R8
+        JN      passOne
+        JEQ     passOne
+        JMP     passZero
+passOne:
+        MOV.B   #1,R6
+        JMP     enterFractionBin
+passZero:
+        MOV.B   #0,R6
+        JMP     enterFractionBin
+enterFractionBin:
+        CALL    #displayNumber
+        INC     R7
+        CMP     R14,R8
+        JEQ     finishLoop
+        JN      fractionSub
+        JMP     addLoop
+fractionSub:
+        SUB     R8,R14
+        JMP     addLoop  
+finishLoop:
+        RET       
+        
+
+; Purpose: Displays decimal number for whole part
+; Pre-conditions: R14 contains the numeric value to be converted
+; Post-conditions: Decimal digits are displayed for whole part
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/6/2022
+displayFractionDec:
+        MOV.W   R9,R15
+        CMP     #0,R14
+        JEQ     displayZeroDec
+        CALL    #getFractionLength
+        ADD     R15,R9
+        DEC     R9
+        MOV     R9,R7
+        MOV.W   R14,R13
+        MOV.W   R15,R14   
+        JMP     dividingTenLoops
+displayZeroDec:
+        MOV.B   R9,R7
+        MOV.B   #0,R6
+        CALL    #displayNumber
+        RET
+dividingTenLoops:
+        MOV.B   #10,R11
+        CALL    #divideNum
+        MOV.B   R12,R6                  ; Moving remainder
+        CALL    #displayNumber
+        DEC     R7
+        CMP     R14,R7
+        JN      breakLoop
+        CMP     #0,R13
+        JEQ     breakLoop
+        JMP     dividingTenLoops
+
+
+
+; Purpose: Returns the ammount of digits for the fractional part
+; Pre-conditions: None
+; Post-conditions: The ammount of digits is stored in R9
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/6/2022
+getFractionLength:
+        CMP     #0,R14
+        JEQ     fractionLength0
+        CMP     #10,R14
+        JN      fractionLength1
+        CMP     #100,R14
+        JN      fractionLength2
+        CMP     #1000,R14
+        JN      fractionLength3
+        CMP     #10000,R14
+        JN      fractionLength4
+        JMP     fractionLength5              
+fractionLength0:
+        MOV.B   #0,R9
+        RET
+fractionLength1:
+        MOV.B   #1,R9
+        RET
+fractionLength2:
+        MOV.B   #2,R9
+        RET
+fractionLength3:
+        MOV.B   #3,R9
+        RET
+fractionLength4:
+        MOV.B   #4,R9
+        RET
+fractionLength5:
+        MOV.B   #5,R9
+        RET
+
+                
+; Purpose: Displays the fraction point at R9 position - 1
+; Pre-conditions: R9 indicates the position to place the point
+; Post-conditions: Segment R9 - 1 contains fraction point 
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/7/2022
+displayFractionPoint:
+        CMP     #0,R9
+        JEQ     breakLoop
+        CMP     #1,R9
+        JEQ     fracPoint0
+        CMP     #2,R9
+        JEQ     fracPoint1
+        CMP     #3,R9
+        JEQ     fracPoint2
+        CMP     #4,R9
+        JEQ     fracPoint3
+        CMP     #5,R9
+        JEQ     fracPoint4
+        RET
+fracPoint0:
+        MOV.B   #0x01,&0xA2A
+        RET
+fracPoint1:
+        MOV.B   #0x01,&0xA26
+        RET
+fracPoint2:
+        MOV.B   #0x01,&0xA24
+        RET
+fracPoint3:
+        MOV.B   #0x01,&0xA33
+        RET
+fracPoint4:
+        MOV.B   #0x01,&0xA2F
+        RET
+
+
+; Purpose: Break from a call usually after checking the value from one of the flags (equivalent of "break" in python)
+; Pre-conditions: None
+; Post-conditions: Breaks from the last call
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/1/2022
+breakLoop:
+        RET
+
+
+; Purpose: Gets the number R6*10
+; Pre-conditions: None
+; Post-conditions: R6 = R6 * 10
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022
+multiplyTen:
+        MOV.W   R6,R12 ; 1
+        ADD     R12,R6 ; 2
+        ADD     R12,R6 ; 3
+        ADD     R12,R6 ; 4
+        ADD     R12,R6 ; 5
+        ADD     R12,R6 ; 6
+        ADD     R12,R6 ; 7
+        ADD     R12,R6 ; 8 
+        ADD     R12,R6 ; 9 
+        ADD     R12,R6 ; 10
+        RET
+
+
+; Purpose: Divides a number in R13 by R11
+; Pre-conditions: R13 is divided by R11
+; Post-conditions: Result is stored in R13 and remainder is stored in R12
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022
+divideNum:
+        MOV.W   R11,R15
+        MOV.W   #0,R12
+        MOV.W   #0,R10                  ; Quotient
+        CMP     #0,R13
+        JEQ     breakLoop
+        MOV.W   R11,R12            
+divideLoop:
+        CMP     R11,R13
+        JEQ     remainder0
+        JN      remainder1
+        ADD     R12,R11
+        INC     R10
+        JMP     divideLoop
+remainder0:
+        INC     R10
+        MOV.W   R10,R13
+        MOV.W   #0,R12                  ; Remainder
+        RET
+remainder1:
+        MOV.W   R11,R5
+        SUB     R13,R5
+        SUB     R5,R15
+        MOV.W   R10,R13
+        MOV.W   R15,R12                 ; Remainder
+        MOV.W   #0,R5
+        RET
+
+
+; Purpose: Clears all the segments except the first position reserved for sign
+; Pre-conditions: None
+; Post-conditions: Clears all segments except the first position
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022
+clearOtherNums:
+        MOV.B   #0x00,&0xA25
+        MOV.B   #0x00,&0xA26
+        MOV.B   #0x00,&0xA23
+        MOV.B   #0x00,&0xA24
+        MOV.B   #0x00,&0xA32
+        MOV.B   #0x00,&0xA33
+        MOV.B   #0x00,&0xA25
+        MOV.B   #0x00,&0xA2F
+        MOV.B   #0x00,&0xA27
+        MOV.B   #0x00,&0xA28
+        RET
+
+
+; Purpose: Displays the number R6 at the position R7 in the led display
+; Pre-conditions: R6 contains the number to be displayed and R7 the position
+; Post-conditions: The number R6 is displayed at the position R7 in the led display
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022
+displayNumber:
+        CALL    #getDigitDisplay        ; Returns the sequence for displaying R6
+        CALL    #enterPosition      
+
+
+; Purpose: Enters the lighting sequence of R15 in one of the position memories of the display
+; Pre-conditions: R15 contains the sequence to light up the segments for number at position R7
+; Post-conditions: The digit position indicated by R7 contains the sequence R15
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/4/2022
+enterPosition:
+        CMP     #0,R7
+        JEQ     atSegment0
+        CMP     #1,R7
+        JEQ     atSegment1
+        CMP     #2,R7
+        JEQ     atSegment2
+        CMP     #3,R7
+        JEQ     atSegment3
+        CMP     #4,R7
+        JEQ     atSegment4
+        CMP     #5,R7
+        JEQ     atSegment5
+        RET
+atSegment0:
+        MOV.B   R15,&0xA29
+        RET
+atSegment1:
+        MOV.B   R15,&0xA25
+        RET
+atSegment2:
+        MOV.B   R15,&0xA23
+        RET
+atSegment3:
+        MOV.B   R15,&0xA32
+        RET
+atSegment4:
+        MOV.B   R15,&0xA2E
+        RET
+atSegment5:
+        MOV.B   R15,&0xA27
+        RET  
+   
+   
+; Purpose: Update flag values to learn about the user input
+; Pre-conditions: User can't press both buttons at the same time
+; Post-conditions: Will update the Negative/Sign flag and the Zero flag
+      ; 1 on the Negative/Sign flag will indicate that S2 was pressed
+      ; 0 on the Negative/Sign flag will indicate that no button was pressed
+      ; 1 on the Zero flag wil indicate that S1 was pressed
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/1/2022
+getUserInput:
+        MOV.B   &P1IN,R5                ; Copy into R5 P1IN's byte
+        AND.B   #00000110B,R5
+        CMP.B   #00000000B,R5
+        JEQ     getUserInput            ; Pressing both buttons at the same time isn't valid
+        CMP.B   #00000100B,R5                  
+        RET
+
+
+; Purpose: Returns the hex value for displaying a digit
+; Pre-conditions: The value of R6 will select the digit
+; Post-conditions: Stores the equivalent hex value at R15
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/2/2022
+getDigitDisplay:
+        MOV.B   #0,R15
+        CMP     #0,R6
+        JEQ     storeZero
+        CMP     #1,R6
+        JEQ     storeOne
+        CMP     #2,R6
+        JEQ     storeTwo
+        CMP     #3,R6
+        JEQ     storeThree
+        CMP     #4,R6
+        JEQ     storeFour
+        CMP     #5,R6
+        JEQ     storeFive
+        CMP     #6,R6
+        JEQ     storeSix
+        CMP     #7,R6
+        JEQ     storeSeven
+        CMP     #8,R6
+        JEQ     storeEight
+        JMP     storeNine
+storeZero:
+        MOV.B   #0xFC,R15
+        RET
+storeOne:
+        MOV.B   #0x60,R15
+        RET
+storeTwo:
+        MOV.B   #0xDB,R15
+        RET
+storeThree:
+        MOV.B   #0xF3,R15
+        RET
+storeFour:
+        MOV.B   #0x67,R15
+        RET
+storeFive:
+        MOV.B   #0xB7,R15
+        RET
+storeSix:
+        MOV.B   #0xBF,R15
+        RET
+storeSeven:
+        MOV.B   #0xE0,R15
+        RET
+storeEight:
+        MOV.B   #0xFF,R15
+        RET
+storeNine:
+        MOV.B   #0xF7,R15
+        RET
+
+
+;Purpose: Waits for the user to press the S1 button or S2 button
+;Pre-conditions: P1.2 S2 has been configured correctly 
+;Post-conditions: The bit corresponding to S1 or S2 is 0 
+;Arguments: None 
+;Author: Eduardo Fuertes 
+;Date: 11/4/2022
+readAny:
+        MOV.B   &P1IN,R5                ; Copy into R5 P1IN's byte
+        AND.B   #00000110B,R5
+        CMP.B   #00000100B,R5
+        JEQ     breakRead
+        CMP.B   #00000010B,R5
+        JEQ     breakRead
+        JMP     readAny     
+breakRead:
+        RET
+
+
+;Purpose: Waits a specified period of time in order to prevent activating the button accidentally 
+;Pre-conditions: None
+;Post-conditions: The amount of time corresponding to 60,000 decrement operations has passed 
+;Arguments: None 
+;Author: Zaneisha Estrella-Ballester 
+;Date: 11/1/2022
+Delay:  
+        MOV.W   #60000,R7
+Next:
+        DEC     R7
+        JNZ     Next
+        CALL    #clearFlags
+        RET
+       
+        
+; Purpose: Clears Sign and Zero flag values
+; Pre-conditions: None
+; Post-conditions: Negative/Sign flag and Zero flag are set to 0
+; Arguments: None 
+; Author: Eduardo Fuertes 
+; Date: 11/1/2022
+clearFlags:
+        CLRN
+        CLRZ
+        RET
+
+EndProgram:
+
+        JMP $                           ; jump to current location '$'
+                                        ; (endless loop)
+        NOP 
+        
+        END
